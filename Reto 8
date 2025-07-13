@@ -8,28 +8,13 @@ class MenuItem:
 
     def calculate_price(self, quantity: int) -> float:
         return self.price * quantity
-    
-    def menu_to_dict(self): ##Creado para el json 
-        return{
-            "type":  self.__class__.__name__, ##Esto es para que me dija el nombre de la clase en string, es mas util que el tipo type
-            "price": self.price
-        }
-    
-class Beverage(MenuItem):
-    def __init__(self, name, price):
-        super().__init__(name, price)
+
   
-    def set_size(self, size:str):
-        self.__size = size
-
-    def get_size(self:str):
-        return self.__size
-
-    def set_bottle_type(self, bottle_type):
-        self.__bottle_type = bottle_type
-
-    def get_bottle_type(self):
-        return self.__bottle_type
+class Beverage(MenuItem):
+    def __init__(self, name, price, bottle_type: str, size: str):
+        super().__init__(name, price)
+        self.size = size
+        self.bottle_type = bottle_type
 
     def with_ice(self, answer) -> str:
         if answer == "yes":
@@ -39,98 +24,76 @@ class Beverage(MenuItem):
 
 
 class Apetizer(MenuItem):
-    def __init__(self, name, price):
+    def __init__(self, name, price, sauce: str):
         super().__init__(name, price)
-
-    def set_sauce(self, sauce:str):
-        self.__sauce = sauce
-
-    def get_sauce(self):
-        return self.__sauce
+        self.sauce = sauce
 
 
 class Dessert(MenuItem):
-    def __init__(self, name, price):
+    def __init__(self, name, price, flavour: str):
         super().__init__(name, price)
-
-    def set_flavour(self, flavour:str):
-        self.__flavour = flavour
-
-    def get_flavour(self):
-        return self.__flavour
+        self.flavour = flavour
 
 
 class MainPlate(MenuItem):
-    def __init__(self, name, price):
+    def __init__(self, name, price, accompaniment_1: str, accompaniment_2: str):
         super().__init__(name, price)
-
-    def set_accompaniment1(self, accompaniment_1:str):
-        self.__accompaniment1 = accompaniment_1
-
-    def get_accompaniment1(self):
-        return self.__accompaniment1
-
-    def set_accompaniment2(self, accompaniment_2:str):
-        self.__accompaniment2 = accompaniment_2
-
-    def get_accompaniment2(self):
-        return self.__accompaniment2
+        self.accompaniment1 = accompaniment_1
+        self.accompaniment2 = accompaniment_2
 
 
 class Order:
     def __init__(self, number):
         self.number = number
-        self.order = []
 
     def add_items(self, menu_item: MenuItem, quantity: int) -> list:
-        prod = namedtuple (f"Orden{self.number}",["prducto","cantidad"]) ##Aqui esta la named tuple, la uso para añadir los objetos al menu
-        product= prod( 
+        self.order=[]
+        order = namedtuple (f"Orden{self.number}",["orden","cantidad"])
+        i_order= order( 
             menu_item,
-            quantity        
+            quantity         
         )
-        self.order.append(product)
-
-    def show_order(self) -> list:
-        return [(item[0].name, item[1]) for item in self.order]
-
-    def calculate_total_price(self) -> float:
-        total_bill = 0
+        self.order.append(i_order)
+    
+    def show_order(self):
+        return [f"{item.name}, {quantity}" for item, quantity in self.order]
+ 
+    def calculate_bill(self) -> str:
+        real_bill = 0
         total_quantity = 0
-
-        main_plate_names = []
-        for item, quantity in self.order:
-            if isinstance(item, MainPlate):
-                main_plate_names.append(item.name)
-
+        names = []
         for menu_item, quantity in self.order:
-            price = menu_item.calculate_price(quantity)
-
-            if "Hamburger"in main_plate_names and isinstance(menu_item, Beverage):
-                price *= 0.9  # 10% Discount on beverages
-
-            if "Fried chicken" in main_plate_names and isinstance(menu_item, Dessert):
-                price *= 0.95  # 5% Discount on desserts
-
-            total_bill += price
+            names.append(menu_item.name)
+            real_bill += menu_item.calculate_price(quantity)
             total_quantity += quantity
 
+        discount_options = [real_bill]
         if total_quantity >= 10:
-            total_bill *= 0.97  # 3% discount if the order has 10 items or more
+            discount_options.append(real_bill * 0.9)
+        if "Hamburger" in names and "Coca_cola" in names:
+            discount_options.append(real_bill * 0.7)
+        elif "Ice_cream" in names and "Chocolate_cake" in names:
+            discount_options.append(real_bill * 0.8)
 
-        return total_bill
+        discount_bill = min(discount_options)
+        return f"Valor sin descuento {round(real_bill, 2)}, Valor con descuento {round(discount_bill, 2)}"
+
     
-   
+    def __iter__(self):
+        return iter(self.order)  
+    
 class Manage_orders:
     def __init__(self):
         self.list_orders=[]
 
     
     def add_list_orders(self, order:Order):
-        self.list_orders.append(order)
+        for order in order:
+            self.list_orders.append(order)
 
 
     def manage_order(self):
-        cola_fifo=Queue(maxsize=15) ##Hay maximo 15
+        cola_fifo=Queue(maxsize=15)
         for order in self.list_orders:
             cola_fifo.put(order)
         
@@ -141,164 +104,36 @@ class Manage_orders:
             order_removida=cola_fifo.get()
             print ("Enviando orden a cocina ",order_removida.show_order())
 
-class Payment:
-    def __init__(self, bill):
-        self.bill = bill
 
-    def pay(self):
-        pass
+##Menu
+## Bebidas
+Coca_cola = Beverage(name="Coca Cola", price=5.00, bottle_type="glass", size="medium")
+Lemonade = Beverage(name="Lemonade", price=4.00, bottle_type="plastic", size="big")
+Iced_Tea = Beverage(name="Iced Tea", price=4.50, bottle_type="glass", size="small")
+Orange_Juice = Beverage(name="Orange Juice", price=6.00, bottle_type="glass", size="big")
 
+# Postres
+Ice_cream_vanilla = Dessert(name="Ice Cream", price=7.00, flavour="vanilla")
+Chocolate_cake = Dessert(name="Chocolate Cake", price=8.00, flavour="chocolate")
+Cheesecake_strawberry = Dessert(name="Cheesecake", price=9.00, flavour="strawberry")
 
-class Card_Payment(Payment):
-    def __init__(self, bill):
-        super().__init__(bill)
-       
-    def set_number_card(self, number_card: str):
-        self.__number_card = number_card
-    
-    def set_cvv(self, cvv: int):
-        self.__cvv = cvv
-    
-    def pay(self):
-        return f"Thanks for paying {self.bill} with the card ending with {self.__number_card[-4:]}"
+# Aperitivos
+Potato_chips_Tomato = Apetizer(name="Potato Chips", price=3.00, sauce="Tomato")
+Nachos_Cheese = Apetizer(name="Nachos", price=4.50, sauce="Cheese")
+Onion_rings_BBQ = Apetizer(name="Onion Rings", price=4.00, sauce="BBQ")
+Garlic_bread_Garlic = Apetizer(name="Garlic Bread", price=3.50, sauce="Garlic")
 
+# Platos fuertes
+Hamburger_fries_salad = MainPlate(name="Hamburger", price=10.00, accompaniment_1="fries", accompaniment_2="salad")
+Grilled_Chicken_rice_vegetables = MainPlate(name="Grilled Chicken", price=12.00, accompaniment_1="rice", accompaniment_2="vegetables")
+Pasta_Bolognese_bread_parmesan = MainPlate(name="Pasta Bolognese", price=11.00, accompaniment_1="bread", accompaniment_2="parmesan")
+Steak_mashed_grilled = MainPlate(name="Steak", price=15.00, accompaniment_1="mashed potatoes", accompaniment_2="grilled vegetables")
 
-class Money_Payment(Payment):
-    def __init__(self, bill):
-        super().__init__(bill)
-     
-    def set_amount(self, amount: float):
-        self.__amount = amount
-    
-    def get_amount(self):
-        return self.__amount
-    
-    def pay(self):
-        if self.__amount >= self.bill:
-            return f"Thanks for paying {self.bill}, here is your change {self.__amount - self.bill}"
-        else:
-            return "You don't have enough money :///"
-            
-class MenuCreator():
-    def __init__(self):
-        self.menu={}
-    
+# Creo una orden de ejemplo
+order1 = Order(1)
+order1.add_items(Coca_cola, 2)
+order1.add_items(Ice_cream_vanilla, 4)
+order1.add_items(Potato_chips_Tomato, 6)
+order1.add_items(Hamburger_fries_salad, 7)
+order1.calculate_bill
 
-    def add_items_to_menu(self, Menuitem:MenuItem):
-        self.menu[Menuitem.name] = Menuitem.menu_to_dict()
-        return self.menu
-    
-    def update_menu_items(self):
-        name=input("Cual es el nombre del producto que quieres modificar")
-        if name in self.menu.keys():
-            price = float(input("Nuevo precio: "))
-            self.menu[name]["price"] = price
-            print("Actualizado")
-
-        else: 
-            print("No existe el elemento")
-
-    def delete_menu_items(self):
-        name=input("Cual item quieres remover")
-        if name in self.menu.keys():
-            p=self.menu.pop(name)
-            print (f"Se eleminio {p}")
-        
-        else:
-           print( "No existe el elemento ")
-
-    
-# 🥤 Drinksn
-coke = Beverage("Coca-cola", 2.5)
-coke.set_size("medium")
-coke.set_bottle_type("plastic")
-
-water = Beverage("Water", 1.5)
-water.set_size("large")
-water.set_bottle_type("glass")
-
-juice = Beverage("Orange juice", 3.0)
-juice.set_size("small")
-juice.set_bottle_type("tetra pak")
-
-iced_tea =Beverage("Iced tea", 2.0)
-iced_tea.set_size("medium")
-iced_tea.set_bottle_type("plastic")
-
-# 🍟 Appetizers
-fries = Apetizer("French fries", 3.0)
-fries.set_sauce("Ketchup")
-
-wings = Apetizer("Wings", 4.5)
-wings.set_sauce("BBQ")
-
-nuggets = Apetizer("Nuggets", 3.5)
-nuggets.set_sauce("Mustard")
-
-salad = Apetizer("Mixed salad", 3.0)
-salad.set_sauce("Ranch")
-
-# 🍽️ Main Courses
-hamburger = MainPlate("Hamburger", 6.0)
-hamburger.set_accompaniment1("French fries")
-hamburger.set_accompaniment2("Salad")
-
-fried_chicken = MainPlate("Fried chicken", 7.0)
-fried_chicken.set_accompaniment1("Mashed potatoes")
-fried_chicken.set_accompaniment2("Corn")
-
-lasagna = MainPlate("Lasagna", 8.0)
-lasagna.set_accompaniment1("Garlic bread")
-lasagna.set_accompaniment2("Green salad")
-
-steak = MainPlate("Steak", 9.5)
-steak.set_accompaniment1("Rice")
-steak.set_accompaniment2("Sautéed potatoes")
-
-# 🍰 Desserts
-ice_cream = Dessert("Ice cream", 2.0)
-ice_cream.set_flavour("Vanilla")
-
-chocolate_cake = Dessert("Chocolate cake", 2.5)
-chocolate_cake.set_flavour("Chocolate")
-
-flan = Dessert("Flan", 2.2)
-flan.set_flavour("Caramel")
-
-brownie = Dessert("Brownie", 2.8)
-brownie.set_flavour("Walnut")
-
-
-# Create an order
-order_1 = Order(number=1)
-
-# Add items
-order_1.add_items(juice, 2)         
-order_1.add_items(nuggets, 2)       
-order_1.add_items(ice_cream, 2)     
-order_1.add_items(water, 2)         
-
-order2= Order(2)
-order2.add_items(ice_cream, 2)
-
-order3= Order(3)
-order3.add_items(hamburger,6)
-
-print(order_1.calculate_total_price())
-
-Manage_orders1=Manage_orders()
-
-Manage_orders1.add_list_orders(order_1)
-Manage_orders1.add_list_orders(order2)
-Manage_orders1.add_list_orders(order3)
-Manage_orders1.manage_order()
-
-MenuCreator1=MenuCreator()
-MenuCreator1.add_items_to_menu(chocolate_cake)
-MenuCreator1.add_items_to_menu(iced_tea)
-MenuCreator1.add_items_to_menu(steak)
-MenuCreator1.add_items_to_menu(brownie)
-print(MenuCreator1.menu)
-MenuCreator1.update_menu_items()
-MenuCreator1.delete_menu_items()
-print(MenuCreator1.menu)
