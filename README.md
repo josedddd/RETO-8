@@ -4,3 +4,4 @@ Para este reto simplemente en la clase order, creo el iter que me devuelva la li
    def __iter__(self):
         return iter(self.order)
  ```
+No es mucho pero es q tocaba estudiar para otras cosas v:
