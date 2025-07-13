@@ -1,249 +1,304 @@
+from queue import Queue
+from collections import namedtuple
 
-from math import degrees,acos,sin,radians,atan2
+class MenuItem:
+    def __init__(self, name: str, price: float):
+        self.name = name
+        self.price = price
 
-
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        if not isinstance(self.x, (int, float)) or not isinstance(self.y, (float, int)):
-            raise TypeError("No pusiste enteros o flotantes") ### Si no se pusieron o enteros o flotantes, saca un type error.
-
-
-class Line:
-    def __init__(self, point_start: Point, point_end: Point):
-        
-        self.point_start = point_start
-        self.point_end = point_end
-        self.length = round(((point_end.x - point_start.x) ** 2 + (point_end.y - point_start.y) ** 2) ** 0.5)
-        if self.length == 0:
-            raise ValueError("Pusiste mal los valores de cada vertice >:")  ### Aca si no existe linea (dos puntos iguales, o muy muy cercanos), saca un value error
-        self.slope = atan2((point_end.y - point_start.y),(point_end.x - point_start.x))
-        self.slope_degrees = degrees(self.slope)
-
-
-    def compute_length(self) -> float:
-        return self.length
+    def calculate_price(self, quantity: int) -> float:
+        return self.price * quantity
     
-class Shape():
-    def __init__(self):
-        pass
-
-    def set_is_regular(self, is_regular:bool):
-        self._is_regular=is_regular
-
-    def get_is_regular(self):
-        return self._is_regular
-
-    def set_vertices(self, vertices:list):
-        self._vertices=vertices
-       
-    def get_vertices(self) -> list:
-        return [(self._vertices[x].x, self._vertices[x].y) for x in range(len(self._vertices))]
-    
-    def compute_edges(self):
-        pass
-
-    def get_edges(self):
-        pass
-
-    def compute_inner_angles(self):
-        pass        
-
-    def compute_perimeter(self):
-        pass
-
-    def compute_area(self):
-        pass
-
-    def verify_type(self):
-        pass
-
-class Rectangle(Shape):
-    def __init__(self):
-        super().__init__()
-    
-    def compute_edges(self):   
-        #Estructura de vertices de un rectangulo: 
-        #[point_left_up, point_right_up, point_right_down, point_left_dowm]
-        self._edgeH_up = Line(self._vertices[0], self._vertices[1])
-        self._edgeH_down = Line(self._vertices[3], self._vertices[2])
-        self._edgeV_left = Line(self._vertices[0], self._vertices[3])
-        self._edgeV_right = Line(self._vertices[1], self._vertices[2])
-      
-    def get_edges(self) -> list:
-        self.compute_edges()
-        return [
-            {
-                "name": "top edge",
-                "start": (self._edgeH_up.point_start.x, self._edgeH_up.point_start.y),
-                "end": (self._edgeH_up.point_end.x, self._edgeH_up.point_end.y),
-                "length": self._edgeH_up.compute_length()
-            },
-            {
-                "name": "bottom edge",
-                "start": (self._edgeH_down.point_start.x, self._edgeH_down.point_start.y),
-                "end": (self._edgeH_down.point_end.x, self._edgeH_down.point_end.y),
-                "length": self._edgeH_down.compute_length()
-            },
-            {
-                "name": "left edge",
-                "start": (self._edgeV_left.point_start.x, self._edgeV_left.point_start.y),
-                "end": (self._edgeV_left.point_end.x, self._edgeV_left.point_end.y),
-                "length": self._edgeV_left.compute_length()
-            },
-            {
-                "name": "right edge",
-                "start": (self._edgeV_right.point_start.x, self._edgeV_right.point_start.y),
-                "end": (self._edgeV_right.point_end.x, self._edgeV_right.point_end.y),
-                "length": self._edgeV_right.compute_length()
-            }
-        ]
-
-    def compute_area(self) -> float:
-        self.compute_edges()
-        return (self._edgeH_up.compute_length()*self._edgeV_right.compute_length() )
-       
-    def compute_perimeter(self) -> float:
-        self.compute_edges()
-        return 2*self._edgeH_up.compute_length()+2*self._edgeV_right.compute_length()
-    
-    def compute_inner_angles(self):
-        return [90, 90, 90, 90]
-
-class Square(Rectangle):
-    def __init__(self):
-        super().__init__()
-    
-  
-class Triangle(Shape):
-    def __init__(self):
-        super().__init__()
-
-    def compute_edges(self): 
-        ## Orden de colocar los vertices 
-        # [Vertice superior, Vertice_inferior derecho, Vertice inferior izquierdo]
-        
-        self._edge1 = Line(self._vertices[0], self._vertices[1])
-        self._edge2 = Line(self._vertices[1], self._vertices[2])
-        self._edge3 = Line(self._vertices[2], self._vertices[0])
-        self._leng_edge1= self._edge1.compute_length()
-        self._leng_edge2= self._edge2.compute_length()
-        self._leng_edge3= self._edge3.compute_length()
-
-
-    def get_edges(self):
-        self.compute_edges()
-        return [
-        {
-            "name": "A",
-            "start": (self._edge1.point_start.x, self._edge1.point_start.y),
-            "end": (self._edge1.point_end.x, self._edge1.point_end.y),
-            "length": self._leng_edge1
-        },
-        {
-            "name": "B",  
-            "start": (self._edge2.point_start.x, self._edge2.point_start.y),
-            "end": (self._edge2.point_end.x, self._edge2.point_end.y),
-            "length": self._leng_edge2
-        },
-        {
-            "name":"C",
-            "start": (self._edge3.point_start.x, self._edge3.point_start.y),
-            "end": (self._edge3.point_end.x, self._edge3.point_end.y),
-            "length": self._leng_edge3
+    def menu_to_dict(self): ##Creado para el json 
+        return{
+            "type":  self.__class__.__name__, ##Esto es para que me dija el nombre de la clase en string, es mas util que el tipo type
+            "price": self.price
         }
-    ]
+    
+class Beverage(MenuItem):
+    def __init__(self, name, price):
+        super().__init__(name, price)
+  
+    def set_size(self, size:str):
+        self.__size = size
 
-    def compute_inner_angles(self):
-        self.compute_edges()
-         #### El orden del calculo de los angulos es 
-         # [Angulo opuesto al lado "A", Angulo opuesto al Lado B, Angulo opuesto al lado C]
-        self.compute_edges()
-        cos_angle_edge1= (self._leng_edge3**2 + self._leng_edge2**2 - self._leng_edge1**2) / (
-            2 * self._leng_edge3* self._leng_edge2)
-        self.angle_edge_1 = round(degrees(acos(cos_angle_edge1)))
+    def get_size(self:str):
+        return self.__size
 
-        cos_angle_edge2 = (self._leng_edge3**2 + self._leng_edge1**2 - self._leng_edge2**2) / (
-            2 * self._leng_edge3* self._leng_edge1)
-        self.angle_edge_2 = round(degrees(acos(cos_angle_edge2)))
-        
-        cos_angle_edge3 = (self._leng_edge2**2 + self._leng_edge1**2 - self._leng_edge3**2) / (
-            2 * self._leng_edge2* self._leng_edge1)
-        self.angle_edge_3 = round(degrees(acos(cos_angle_edge3)))
-       
-        self.total_angles=[self.angle_edge_1, self.angle_edge_2, self.angle_edge_3]
-        return self.total_angles
-        
-    def compute_area(self) -> float:
-        self.compute_edges()
-        self.compute_inner_angles()
-        return (1/2*self._leng_edge1*self._leng_edge2*sin(radians(self.angle_edge_3)))
-       
-    def compute_perimeter(self) -> float:
-        self.compute_edges()
-        return (self._leng_edge1+self._leng_edge2 +self._leng_edge3)
+    def set_bottle_type(self, bottle_type):
+        self.__bottle_type = bottle_type
+
+    def get_bottle_type(self):
+        return self.__bottle_type
+
+    def with_ice(self, answer) -> str:
+        if answer == "yes":
+            return f"your {self.name} is with ice"
+        elif answer == "no":
+            return f"your {self.name} is without ice"
+
+
+class Apetizer(MenuItem):
+    def __init__(self, name, price):
+        super().__init__(name, price)
+
+    def set_sauce(self, sauce:str):
+        self.__sauce = sauce
+
+    def get_sauce(self):
+        return self.__sauce
+
+
+class Dessert(MenuItem):
+    def __init__(self, name, price):
+        super().__init__(name, price)
+
+    def set_flavour(self, flavour:str):
+        self.__flavour = flavour
+
+    def get_flavour(self):
+        return self.__flavour
+
+
+class MainPlate(MenuItem):
+    def __init__(self, name, price):
+        super().__init__(name, price)
+
+    def set_accompaniment1(self, accompaniment_1:str):
+        self.__accompaniment1 = accompaniment_1
+
+    def get_accompaniment1(self):
+        return self.__accompaniment1
+
+    def set_accompaniment2(self, accompaniment_2:str):
+        self.__accompaniment2 = accompaniment_2
+
+    def get_accompaniment2(self):
+        return self.__accompaniment2
+
+
+class Order:
+    def __init__(self, number):
+        self.number = number
+        self.order = []
+
+    def add_items(self, menu_item: MenuItem, quantity: int) -> list:
+        prod = namedtuple (f"Orden{self.number}",["prducto","cantidad"]) ##Aqui esta la named tuple, la uso para añadir los objetos al menu
+        product= prod( 
+            menu_item,
+            quantity        
+        )
+        self.order.append(product)
+
+    def show_order(self) -> list:
+        return [(item[0].name, item[1]) for item in self.order]
+
+    def calculate_total_price(self) -> float:
+        total_bill = 0
+        total_quantity = 0
+
+        main_plate_names = []
+        for item, quantity in self.order:
+            if isinstance(item, MainPlate):
+                main_plate_names.append(item.name)
+
+        for menu_item, quantity in self.order:
+            price = menu_item.calculate_price(quantity)
+
+            if "Hamburger"in main_plate_names and isinstance(menu_item, Beverage):
+                price *= 0.9  # 10% Discount on beverages
+
+            if "Fried chicken" in main_plate_names and isinstance(menu_item, Dessert):
+                price *= 0.95  # 5% Discount on desserts
+
+            total_bill += price
+            total_quantity += quantity
+
+        if total_quantity >= 10:
+            total_bill *= 0.97  # 3% discount if the order has 10 items or more
+
+        return total_bill
+    
+   
+class Manage_orders:
+    def __init__(self):
+        self.list_orders=[]
 
     
+    def add_list_orders(self, order:Order):
+        self.list_orders.append(order)
 
-### La implementacion de los errores se puede ver aca, donde hago una funcion que verifique el tipo de triangulo, si las
-# vertices puestos no corresponden al tipo saca un Value error (una buena manera de avisarle al usario :V)
-class EquilateralTriangle(Triangle):
-    def __init__(self):
-        super().__init__()
+
+    def manage_order(self):
+        cola_fifo=Queue(maxsize=15) ##Hay maximo 15
+        for order in self.list_orders:
+            cola_fifo.put(order)
+        
+        if cola_fifo.full():
+            print("La cola esta llena, por favor esperar")
+        
+        while not cola_fifo.empty():
+            order_removida=cola_fifo.get()
+            print ("Enviando orden a cocina ",order_removida.show_order())
+
+class Payment:
+    def __init__(self, bill):
+        self.bill = bill
+
+    def pay(self):
+        pass
+
+
+class Card_Payment(Payment):
+    def __init__(self, bill):
+        super().__init__(bill)
+       
+    def set_number_card(self, number_card: str):
+        self.__number_card = number_card
     
-    def verify_type(self) -> bool:
-        self.get_edges()
-        if self._leng_edge1 != self._leng_edge2 or self._leng_edge1 != self._leng_edge3:
-            raise ValueError("Los vertices que colocaste no corresponden a un triangulo equilatero")
-        else:
-            return True
-        
-class IsoscelesTriangle(Triangle) :
-     def __init__(self):
-        super().__init__()
+    def set_cvv(self, cvv: int):
+        self.__cvv = cvv
+    
+    def pay(self):
+        return f"Thanks for paying {self.bill} with the card ending with {self.__number_card[-4:]}"
 
-     def verify_type(self) -> bool:
-        self.get_edges()  
-        if (self._leng_edge1 != self._leng_edge2 and self._leng_edge1 != self._leng_edge3
-             and self._leng_edge2!=self._leng_edge3):
-                raise ValueError("Los vertices que colocaste no corresponden a un triangulo equilatero")
+
+class Money_Payment(Payment):
+    def __init__(self, bill):
+        super().__init__(bill)
+     
+    def set_amount(self, amount: float):
+        self.__amount = amount
+    
+    def get_amount(self):
+        return self.__amount
+    
+    def pay(self):
+        if self.__amount >= self.bill:
+            return f"Thanks for paying {self.bill}, here is your change {self.__amount - self.bill}"
         else:
-            return True
-        
-class ScaleneTriangle(Triangle):
+            return "You don't have enough money :///"
+            
+class MenuCreator():
     def __init__(self):
-        super().__init__()
+        self.menu={}
+    
 
-    def verify_type(self) -> bool:
-        self.get_edges()  
-        if (self._leng_edge1 == self._leng_edge2 or self._leng_edge1 == self._leng_edge3
-             or self._leng_edge2 == self._leng_edge3):
-                raise ValueError("Los vertices que colocaste no corresponden a un triangulo escaleno")
-        else:
-            return True
+    def add_items_to_menu(self, Menuitem:MenuItem):
+        self.menu[Menuitem.name] = Menuitem.menu_to_dict()
+        return self.menu
+    
+    def update_menu_items(self):
+        name=input("Cual es el nombre del producto que quieres modificar")
+        if name in self.menu.keys():
+            price = float(input("Nuevo precio: "))
+            self.menu[name]["price"] = price
+            print("Actualizado")
+
+        else: 
+            print("No existe el elemento")
+
+    def delete_menu_items(self):
+        name=input("Cual item quieres remover")
+        if name in self.menu.keys():
+            p=self.menu.pop(name)
+            print (f"Se eleminio {p}")
         
-class RightTriangle(Triangle):
-    def __init__(self):
-        super().__init__()
-
-    def verify_type(self) -> bool:
-        self.compute_inner_angles()  
-        if 90 not in self.total_angles:
-            raise ValueError("Los vertices que colocaste no corresponden a un triangulo rectangulo")
         else:
-            return True
+           print( "No existe el elemento ")
+
+    
+# 🥤 Drinksn
+coke = Beverage("Coca-cola", 2.5)
+coke.set_size("medium")
+coke.set_bottle_type("plastic")
+
+water = Beverage("Water", 1.5)
+water.set_size("large")
+water.set_bottle_type("glass")
+
+juice = Beverage("Orange juice", 3.0)
+juice.set_size("small")
+juice.set_bottle_type("tetra pak")
+
+iced_tea =Beverage("Iced tea", 2.0)
+iced_tea.set_size("medium")
+iced_tea.set_bottle_type("plastic")
+
+# 🍟 Appetizers
+fries = Apetizer("French fries", 3.0)
+fries.set_sauce("Ketchup")
+
+wings = Apetizer("Wings", 4.5)
+wings.set_sauce("BBQ")
+
+nuggets = Apetizer("Nuggets", 3.5)
+nuggets.set_sauce("Mustard")
+
+salad = Apetizer("Mixed salad", 3.0)
+salad.set_sauce("Ranch")
+
+# 🍽️ Main Courses
+hamburger = MainPlate("Hamburger", 6.0)
+hamburger.set_accompaniment1("French fries")
+hamburger.set_accompaniment2("Salad")
+
+fried_chicken = MainPlate("Fried chicken", 7.0)
+fried_chicken.set_accompaniment1("Mashed potatoes")
+fried_chicken.set_accompaniment2("Corn")
+
+lasagna = MainPlate("Lasagna", 8.0)
+lasagna.set_accompaniment1("Garlic bread")
+lasagna.set_accompaniment2("Green salad")
+
+steak = MainPlate("Steak", 9.5)
+steak.set_accompaniment1("Rice")
+steak.set_accompaniment2("Sautéed potatoes")
+
+# 🍰 Desserts
+ice_cream = Dessert("Ice cream", 2.0)
+ice_cream.set_flavour("Vanilla")
+
+chocolate_cake = Dessert("Chocolate cake", 2.5)
+chocolate_cake.set_flavour("Chocolate")
+
+flan = Dessert("Flan", 2.2)
+flan.set_flavour("Caramel")
+
+brownie = Dessert("Brownie", 2.8)
+brownie.set_flavour("Walnut")
 
 
-if __name__=="__main__":
-    #Rectangle
-    print("Rectangle")
-    rect = Rectangle()
-    rect.set_vertices([Point(0, 2), Point(4, 2), Point(4, 0), Point(0, 0)])
-    print(rect.get_vertices())
-    print(rect.get_edges())
-    print(rect._edgeV_left.slope_degrees)
+# Create an order
+order_1 = Order(number=1)
 
-   
+# Add items
+order_1.add_items(juice, 2)         
+order_1.add_items(nuggets, 2)       
+order_1.add_items(ice_cream, 2)     
+order_1.add_items(water, 2)         
 
-   
+order2= Order(2)
+order2.add_items(ice_cream, 2)
+
+order3= Order(3)
+order3.add_items(hamburger,6)
+
+print(order_1.calculate_total_price())
+
+Manage_orders1=Manage_orders()
+
+Manage_orders1.add_list_orders(order_1)
+Manage_orders1.add_list_orders(order2)
+Manage_orders1.add_list_orders(order3)
+Manage_orders1.manage_order()
+
+MenuCreator1=MenuCreator()
+MenuCreator1.add_items_to_menu(chocolate_cake)
+MenuCreator1.add_items_to_menu(iced_tea)
+MenuCreator1.add_items_to_menu(steak)
+MenuCreator1.add_items_to_menu(brownie)
+print(MenuCreator1.menu)
+MenuCreator1.update_menu_items()
+MenuCreator1.delete_menu_items()
+print(MenuCreator1.menu)
